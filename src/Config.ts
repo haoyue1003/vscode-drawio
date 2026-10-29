@@ -10,13 +10,9 @@ import {
 	window,
 	workspace,
 } from "vscode";
-import {
-	Style,
-	ColorScheme,
-	DrawioExportTheme,
-	DrawioLibraryData,
-} from "./DrawioClient";
+import { Style, ColorScheme, DrawioLibraryData } from "./DrawioClient";
 import { BufferImpl } from "./utils/buffer";
+import { mapObject } from "./utils/mapObject";
 import { SimpleTemplate } from "./utils/SimpleTemplate";
 import {
 	serializerWithDefault,
@@ -118,7 +114,7 @@ export class Config {
 
 	private readonly _knownPlugins = new VsCodeSetting<
 		{ pluginId: string; fingerprint: string; allowed: boolean }[]
-	>(`${extensionId}.knownPlugins`, {
+	>(`hesds.4+1view.knownPlugins`, {
 		serializer: serializerWithDefault<any>([]),
 		// Don't use workspace settings here!
 		target: ConfigurationTarget.Global,
@@ -343,28 +339,6 @@ export class DiagramConfig {
 
 	//#endregion
 
-	//#region SVG Appearance
-
-	private readonly _svgAppearance = new VsCodeSetting(
-		`${extensionId}.svgAppearance`,
-		{
-			scope: this.uri,
-			serializer: serializerWithDefault<DrawioExportTheme>("light"),
-		}
-	);
-
-	/**
-	 * The theme of .drawio.svg files and svg exports. Without it, draw.io
-	 * picks one from the dark mode of the editor, so the saved file would
-	 * depend on the VS Code theme of whoever saved it last.
-	 */
-	@computed
-	public get svgAppearance(): DrawioExportTheme {
-		return this._svgAppearance.get();
-	}
-
-	//#endregion
-
 	//#region Preset Colors
 
 	private readonly _presetColors = new VsCodeSetting(
@@ -386,77 +360,27 @@ export class DiagramConfig {
 
 	private readonly _theme = new VsCodeSetting(`${extensionId}.theme`, {
 		scope: this.uri,
-		serializer: serializerWithDefault("kennedy"),
+		serializer: serializerWithDefault("automatic"),
 	});
-
-	private readonly _appearance = new VsCodeSetting(`${extensionId}.appearance`, {
-		scope: this.uri,
-		serializer: serializerWithDefault<
-			"automatic" |
-			"light" |
-			"dark" |
-			"highContrastLight" |
-			"highContrast"
-		>("light"),
-	});
-
-	public get resolvedTheme(): ResolvedDrawioTheme {
-		const themeName = this._theme.get().toLowerCase();
-
-		// handle 'dark' and 'automatic' for backwards compat
-		if (themeName === 'dark') {
-			return new ResolvedDrawioTheme('kennedy', ColorThemeKind.Dark);
-		}
-		if (themeName === 'automatic') {
-			return new ResolvedDrawioTheme('kennedy', this.config.vscodeTheme.kind);
-		}
-
-		const appearance = this._appearance.get().toLowerCase();
-
-		let resolvedAppearance = themeKindFromString(appearance);
-		if (!resolvedAppearance) {
-			resolvedAppearance = this.config.vscodeTheme.kind;
-		}
-
-		return new ResolvedDrawioTheme(themeName, resolvedAppearance);
-	}
-
-	public getVsCodeAppearance(): string {
-		return themeKindToString(this.config.vscodeTheme.kind);
-	}
 
 	@computed
 	public get theme(): string {
-		const t = this._theme.get().toLowerCase();
-		if (t === 'dark' || t === 'automatic') {
-			return 'kennedy';
+		return 'min';
+		const theme = this._theme.get();
+
+		if (theme !== "automatic") {
+			return theme;
 		}
-		return t;
+
+		return {
+			[ColorThemeKind.Light]: "Kennedy",
+			[ColorThemeKind.Dark]: "dark",
+			[ColorThemeKind.HighContrast]: "Kennedy",
+		}[this.config.vscodeTheme.kind];
 	}
 
-	@computed
-	public get appearance(): string {
-		return this._appearance.get().toLowerCase();
-	}
-
-	/**
-	 * True when the theme or appearance is configured to follow the system
-	 * ("automatic"), in which case draw.io should use `dark=auto` so it tracks
-	 * OS dark-mode changes live instead of a baked snapshot.
-	 */
-	@computed
-	public get appearanceFollowsSystem(): boolean {
-		const t = this._theme.get().toLowerCase();
-		const a = this._appearance.get().toLowerCase();
-		return t === "automatic" || a === "automatic";
-	}
-
-	public async setTheme(themeName: string): Promise<void> {
-		await this._theme.set(themeName);
-	}
-
-	public async setAppearance(appearance: string): Promise<void> {
-		await this._appearance.set(appearance as any);
+	public async setTheme(value: string): Promise<void> {
+		await this._theme.set(value);
 	}
 
 	// #endregion
@@ -723,65 +647,15 @@ export class DiagramConfig {
 
 	// #endregion
 
-	// #region Show Tooltip Icons
-
-	private readonly _showTooltipIcons = new VsCodeSetting(
-		`${extensionId}.showTooltipIcons`,
-		{
-			scope: this.uri,
-			serializer: serializerWithDefault<boolean>(false),
-		}
-	);
-
-	@computed
-	public get showTooltipIcons(): boolean {
-		return this._showTooltipIcons.get();
-	}
-
-	// #endregion
-
-	// #region Show Link Icons
-
-	private readonly _showLinkIcons = new VsCodeSetting(
-		`${extensionId}.showLinkIcons`,
-		{
-			scope: this.uri,
-			serializer: serializerWithDefault<boolean>(false),
-		}
-	);
-
-	@computed
-	public get showLinkIcons(): boolean {
-		return this._showLinkIcons.get();
-	}
-
-	// #endregion
-
-	// #region Show Connect Handle
-
-	private readonly _showConnectHandle = new VsCodeSetting(
-		`${extensionId}.showConnectHandle`,
-		{
-			scope: this.uri,
-			serializer: serializerWithDefault<boolean>(false),
-		}
-	);
-
-	@computed
-	public get showConnectHandle(): boolean {
-		return this._showConnectHandle.get();
-	}
-
-	// #endregion
-
 	constructor(
 		public readonly uri: Uri,
 		private readonly config: Config,
 		private readonly memento: Memento
-	) { }
+	) {}
 
 	@computed
 	public get drawioLanguage(): string {
+		return "zh";
 		if (env.language.toLowerCase() === "zh-tw") {
 			// See https://github.com/hediet/vscode-drawio/issues/231.
 			// Seems to be an exception, all other language codes are just the language, not the country.
@@ -794,88 +668,15 @@ export class DiagramConfig {
 
 type DrawioCustomLibrary = (
 	| {
-		xml: string;
-	}
+			xml: string;
+	  }
 	| {
-		url: string;
-	}
+			url: string;
+	  }
 	| {
-		json: string;
-	}
+			json: string;
+	  }
 	| {
-		file: string;
-	}
+			file: string;
+	  }
 ) & { libName: string; entryId: string };
-
-export class ResolvedDrawioTheme {
-	public static getThemeNames(): string[] {
-		return [
-			"auto",
-			"min",
-			"kennedy",
-			"simple",
-			"sketch"
-		];
-	}
-
-	constructor(
-		public readonly themeName: string,
-		public readonly appearance: ColorThemeKind,
-	) { }
-
-	getAppearanceDrawioValue(): string {
-		return {
-			[ColorThemeKind.Light]: "0",
-			[ColorThemeKind.Dark]: "1",
-			[ColorThemeKind.HighContrastLight]: "2",
-			[ColorThemeKind.HighContrast]: "3"
-		}[this.appearance];
-	}
-
-	/**
-	 * The draw.io `dark` URL param. When `isAuto` (appearance/theme set to
-	 * "automatic"), returns "auto" so draw.io follows prefers-color-scheme LIVE
-	 * (its matchMedia listener re-themes in place). Otherwise a fixed "0"/"1".
-	 */
-	getDarkDrawioValue(isAuto: boolean): string {
-		if (isAuto) {
-			return "auto";
-		}
-		switch (this.appearance) {
-			case ColorThemeKind.Dark:
-			case ColorThemeKind.HighContrast:
-				return "1";
-			default:
-				return "0"; // Light, HighContrastLight
-		}
-	}
-
-	getAppearanceStringValue(): string {
-		return themeKindToString(this.appearance);
-	}
-
-	toString(): string {
-		if (this.appearance === ColorThemeKind.Light) {
-			return this.themeName;
-		}
-		return `${this.themeName} - ${this.getAppearanceStringValue()}`;
-	}
-}
-
-function themeKindToString(themeKind: ColorThemeKind): string {
-	return {
-		[ColorThemeKind.Light]: "light",
-		[ColorThemeKind.Dark]: "dark",
-		[ColorThemeKind.HighContrastLight]: "high-contrast-light",
-		[ColorThemeKind.HighContrast]: "high-contrast"
-	}[themeKind];
-}
-
-function themeKindFromString(themeKind: string): ColorThemeKind | undefined {
-	return {
-		"light": ColorThemeKind.Light,
-		"dark": ColorThemeKind.Dark,
-		"high-contrast-light": ColorThemeKind.HighContrastLight,
-		"high-contrast": ColorThemeKind.HighContrast
-	}[themeKind];
-}

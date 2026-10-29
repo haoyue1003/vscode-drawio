@@ -14,13 +14,29 @@
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
-				"--disable-extensions",
+				"--disable-extension=hediet.vscode-drawio-insiders-build",
 				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--enable-proposed-api hediet.vscode-drawio",
 				"${workspaceFolder}/examples"
 			],
-			"outFiles": [
-				"${workspaceFolder}/dist/**/*.js"
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
+			"preLaunchTask": "npm: dev",
+			"env": {
+				"DEV": "1"
+			}
+		},
+		{
+			"name": "Extension (dev) 2",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--disable-extension=hediet.vscode-drawio-insiders-build",
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--enable-proposed-api hediet.vscode-drawio",
+				"${workspaceFolder}/docs"
 			],
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
 			"preLaunchTask": "npm: dev",
 			"env": {
 				"DEV": "1"
@@ -34,30 +50,11 @@
 			"args": [
 				"--disable-extensions",
 				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--enable-proposed-api hediet.vscode-drawio",
 				"${workspaceFolder}/examples"
 			],
-			"outFiles": [
-				"${workspaceFolder}/dist/**/*.js"
-			],
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
 			"preLaunchTask": "npm: dev"
-		},
-		{
-			"name": "Inline Editor (dev)",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--disable-extensions",
-				"--extensionDevelopmentPath=${workspaceFolder}",
-				"${workspaceFolder}/examples/inline-editor"
-			],
-			"outFiles": [
-				"${workspaceFolder}/dist/**/*.js"
-			],
-			"preLaunchTask": "npm: dev",
-			"env": {
-				"DEV": "1"
-			}
 		}
 	]
 }

@@ -98,6 +98,12 @@ export class CustomizedDrawioClient extends DrawioClient<
 		});
 	}
 
+	public askForDonations(): void {
+		this.sendCustomAction({
+			action: "askForDonations",
+		});
+	}
+
 	protected async handleEvent(evt: CustomDrawioEvent): Promise<void> {
 		if (evt.event === "nodeSelected") {
 			this.onNodeSelectedEmitter.emit({

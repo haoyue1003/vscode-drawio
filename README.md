@@ -1,8 +1,10 @@
 # Draw.io VS Code Integration
 
+[![](https://img.shields.io/static/v1?style=social&label=Sponsor&message=%E2%9D%A4&logo=GitHub&color&link=%3Curl%3E)](https://github.com/sponsors/hediet)
+[![](https://img.shields.io/static/v1?style=social&label=Donate&message=%E2%9D%A4&logo=Paypal&color&link=%3Curl%3E)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZP5F38L4C88UY&source=url)
 [![](https://img.shields.io/twitter/follow/hediet_dev.svg?style=social)](https://twitter.com/intent/follow?screen_name=hediet_dev)
 
-This unofficial extension integrates [Draw.io](https://app.diagrams.net/) (also known as [diagrams.net](https://www.diagrams.net/)) into VS Code.  
+This unofficial extension integrates [Draw.io](https://app.diagrams.net/) (also known as [diagrams.net](diagrams.net)) into VS Code.  
 Mentioned in the official diagrams.net [blog](https://www.diagrams.net/blog/embed-diagrams-vscode).
 
 ## Features
@@ -12,7 +14,6 @@ Mentioned in the official diagrams.net [blog](https://www.diagrams.net/blog/embe
     -   `.drawio.svg` are valid `.svg` files that can be embedded in Github readme files! No export needed.
     -   `.drawio.png` are valid `.png` files! No export needed. You should use `.svg` though whenever possible - they look much better!
     -   To convert between different formats, use the `Draw.io: Convert To...` command.
--   `.drawio` files are plain XML: they diff cleanly in git, and AI assistants can read, edit and review diagram changes like any other code.
 -   Uses an offline version of Draw.io by default.
 -   Multiple Draw.io themes are available.
 -   Use Liveshare to collaboratively edit a diagram with others.
@@ -22,6 +23,13 @@ Mentioned in the official diagrams.net [blog](https://www.diagrams.net/blog/embe
 
 ![](./docs/demo.gif)
 
+<br />
+<br />
+
+# Like it so far? You might also like my [open source](https://github.com/hediet/chrome-ext-github-monaco) [Chrome extension that enhances the Github markdown editor](https://chrome.google.com/webstore/detail/monaco-markdown-editor-fo/mmpbdjdnmhgkpligeniippcgfmkgkpnf)!
+
+<br />
+<br />
 
 ## Editing .drawio.svg/.drawio.png Files
 
@@ -33,7 +41,7 @@ The logo of this extension is such a `.drawio.png` file that has been created wi
 
 ![](./docs/drawio-png.gif)
 
-If you want readable diffs, for your reviewers and your AI tools alike, prefer `.drawio` over `.drawio.png` diagrams.
+If diffs are important for you, you should prefer `.drawio` and avoid `.drawio.png` diagrams.
 
 ## Collaboratively Edit Or Present Diagrams
 
@@ -90,34 +98,6 @@ Add this to your VS Code `settings.json` file if you want to associate it with `
 
 You won't be able to edit arbitrary SVG files though - only those that have been created with Draw.io or this extension!
 
-## Light and Dark `.drawio.svg` Files
-
-By default, `.drawio.svg` files are saved with light colors, whatever theme the editor uses.
-Set `hediet.vscode-drawio.svgAppearance` to `auto` to make them adapt to the color scheme of the page that shows them, for example a README on GitHub in dark mode, or to `dark` to always save them with dark colors.
-The setting applies the next time a diagram is saved. Add it to the workspace settings so that everyone on a team saves the same file.
-
-## Inline Diagrams in VS Code's Markdown Editor (Experimental, Insiders only)
-
-VS Code Insiders ships an experimental WYSIWYG Markdown editor (`View: Reopen Editor With... > Markdown Editor`).
-In that editor, every fenced code block tagged `drawio` is replaced by a live, resizable Draw.io editor:
-
-````markdown
-```drawio
-<mxfile>...</mxfile>
-```
-````
-
-Edits are written straight back into the fenced block, so the Markdown file stays the single source of truth and undo/redo, dirty state and hot exit keep working.
-The block attributes of the inline editor are honored: `locked` makes a block read-only and `height=N` fixes its height, e.g. ```` ```drawio locked height=300 ````.
-The Markdown editor's own lock toggle also puts the diagrams into read-only mode.
-
-Notes:
-
--   VS Code's contribution point for this is experimental and only exists in Insiders builds; in stable VS Code (and in the regular Markdown preview) the fence is shown as text or rendered by the preview plugin as before.
--   Dynamic providers only run in trusted workspaces.
--   Settings that are baked into the editor (theme, appearance, custom libraries, fonts, ...) apply the next time the Markdown editor is opened.
--   Draw.io plugins are not loaded into the inline editors.
-
 ## Editing the Diagram and its XML Side by Side
 
 You can open the same `*.drawio` file with the Draw.io editor and as xml file.
@@ -125,9 +105,6 @@ They are synchronized, so you can switch between them as you like it.
 This is super practical if you want to use find/replace to rename text or other features of VS Code to speed up your diagram creation/edit process.
 Use the `View: Reopen Editor With...` command to toggle between the text or the Draw.io editor. You can open multiple editors for the same file.
 This does not make much sense for SVG files though, as the draw.io diagram is stored in its metadata.
-
-The same goes for AI assistants: the file is a visual diagram for you and plain text for your agent.
-When an agent edits the XML, the change shows up in the open diagram right away, and in a pull request it can read the diff of a diagram (an added node, a changed connection, a new label) and act on it just like it would on code.
 
 ![](./docs/drawio-xml.gif)
 
@@ -140,3 +117,10 @@ When an agent edits the XML, the change shows up in the open diagram right away,
 
 -   [Draw.io](https://app.diagrams.net/) - This extension relies on the giant work of Draw.io. Their embedding feature enables this extension! This extension bundles a recent version of Draw.io.
 -   [vscode-drawio](https://github.com/eightHundreds/vscode-drawio) by eightHundreds.
+
+## Other Cool Extensions
+
+If you like this extension, you might like [my other extensions](https://marketplace.visualstudio.com/search?term=henning%20dieterichs&target=VSCode) too:
+
+-   **[Debug Visualizer](https://marketplace.visualstudio.com/items?itemName=hediet.debug-visualizer)**: An extension for visualizing data structures while debugging.
+-   **[Real-Time Debugging](https://marketplace.visualstudio.com/items?itemName=hediet.realtime-debugging)**: This extension visualizes how your code is being executed.

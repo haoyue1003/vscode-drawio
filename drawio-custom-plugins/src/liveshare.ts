@@ -52,16 +52,7 @@ Draw.loadPlugin((ui) => {
 			if (evt.source !== window.opener) {
 				return;
 			}
-			let data: CustomDrawioAction;
-			try {
-				data = JSON.parse(evt.data);
-			} catch {
-				// e.g. the empty setImmediate probe, re-dispatched by webview-content.html
-				return;
-			}
-			if (!data || typeof data.action !== "string") {
-				return;
-			}
+			const data = JSON.parse(evt.data) as CustomDrawioAction;
 
 			switch (data.action) {
 				case "updateLiveshareViewState": {
@@ -142,42 +133,60 @@ Draw.loadPlugin((ui) => {
 				const graphPos = transformBack(pos);
 				sendEvent({ event: "cursorChanged", position: graphPos });
 			},
-			mouseDown: () => { },
-			mouseUp: () => { },
+			mouseDown: () => {},
+			mouseUp: () => {},
 		});
 
-		// Listen for rubberband events
-		const rubberband = graph.getRubberband();
+		function patchFn(
+			clazz: any,
+			fnName: string,
+			fnFactory: (old: Function) => (this: any, ...args: any) => any
+		) {
+			const old = clazz[fnName];
+			clazz[fnName] = fnFactory(old);
+		}
 
-		if (rubberband != null) {
-			rubberband.addListener(mxEvent.UPDATE, (sender: any, evt: any) => {
-				const x = evt.getProperty("x");
-				const y = evt.getProperty("y");
-				const w = evt.getProperty("width");
-				const h = evt.getProperty("height");
+		patchFn(mxRubberband.prototype, "update", function (old) {
+			return function (...args: any[]) {
+				let first = { ...this.first };
+				let second = { x: args[0], y: args[1] };
+				old.apply(this, args);
+
+				if (first.x > second.x) {
+					const temp = first.x;
+					first.x = second.x;
+					second.x = temp;
+				}
+				if (first.y > second.y) {
+					const temp = first.y;
+					first.y = second.y;
+					second.y = temp;
+				}
 
 				sendEvent({
 					event: "selectedRectangleChanged",
 					rect: {
-						start: transformBack({ x: x, y: y }),
-						end: transformBack({ x: x + w, y: y + h }),
+						start: transformBack(first),
+						end: transformBack(second),
 					},
 				});
-			});
+			};
+		});
 
-			rubberband.addListener(mxEvent.RESET, () => {
+		patchFn(mxRubberband.prototype, "reset", function (old) {
+			return function (...args: any[]) {
+				old.apply(this, args);
+
 				sendEvent({
 					event: "selectedRectangleChanged",
 					rect: undefined,
 				});
-			});
-		}
+			};
+		});
 	});
 });
 
-declare class mxRubberband {
-	addListener(event: string, handler: (sender: any, evt: any) => void): void;
-}
+declare class mxRubberband {}
 
 const svgns = "http://www.w3.org/2000/svg";
 
@@ -300,7 +309,7 @@ class Highlights {
 		{ info: HighlightInfo; instance: mxCellHighlight }
 	>();
 
-	constructor(private readonly graph: DrawioGraph) { }
+	constructor(private readonly graph: DrawioGraph) {}
 
 	private highlightInfoToStr(info: HighlightInfo): string {
 		return JSON.stringify({ color: info.color, cell: info.cell.id });

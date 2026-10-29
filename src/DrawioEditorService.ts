@@ -4,21 +4,26 @@ import { autorun, computed, observable, ObservableSet } from "mobx";
 import { extname } from "path";
 import {
 	commands,
-	QuickPickItem, QuickPickItemKind, StatusBarAlignment,
+	StatusBarAlignment,
 	TextDocument,
 	Uri,
 	WebviewPanel,
 	window,
-	workspace
+	workspace,
 } from "vscode";
-import { Config, DiagramConfig, ResolvedDrawioTheme } from "./Config";
+import { Config, DiagramConfig } from "./Config";
+import { DrawioBinaryDocument } from "./DrawioEditorProviderBinary";
 import {
 	CustomizedDrawioClient,
-	DrawioClientFactory,
 	DrawioClientOptions,
+	DrawioClientFactory,
 } from "./DrawioClient";
-import { DrawioBinaryDocument } from "./DrawioEditorProviderBinary";
 import { registerFailableCommand } from "./utils/registerFailableCommand";
+
+import path = require('path');
+const { sep } = path;
+import * as vscode from 'vscode';
+import { TemplateManager } from './Templates/TemplateManager';
 
 const drawioChangeThemeCommand = "hediet.vscode-drawio.changeTheme";
 
@@ -42,9 +47,9 @@ export class DrawioEditorService {
 		return this._lastActiveDrawioEditor;
 	}
 
-	private readonly statusBar = this.dispose.track(
-		window.createStatusBarItem(StatusBarAlignment.Right)
-	);
+	// private readonly statusBar = this.dispose.track(
+	// 	window.createStatusBarItem(StatusBarAlignment.Right)
+	// );
 
 	constructor(
 		private readonly config: Config,
@@ -94,7 +99,7 @@ export class DrawioEditorService {
 		);
 
 		this.dispose.track(
-			registerFailableCommand("hediet.vscode-drawio.export", () => {
+			registerFailableCommand("hesds.4+1view.export", () => {
 				const activeDrawioEditor = this.activeDrawioEditor;
 				if (!activeDrawioEditor) {
 					return;
@@ -103,22 +108,22 @@ export class DrawioEditorService {
 			})
 		);
 
-		this.dispose.track({
-			dispose: autorun(
-				() => {
-					const activeEditor = this.activeDrawioEditor;
-					this.statusBar.command = drawioChangeThemeCommand;
+		// this.dispose.track({
+		// 	dispose: autorun(
+		// 		() => {
+		// 			const activeEditor = this.activeDrawioEditor;
+		// 			this.statusBar.command = drawioChangeThemeCommand;
 
-					if (activeEditor) {
-						this.statusBar.text = `Theme: ${activeEditor.config.resolvedTheme.toString()}`;
-						this.statusBar.show();
-					} else {
-						this.statusBar.hide();
-					}
-				},
-				{ name: "Update UI" }
-			),
-		});
+		// 			if (activeEditor) {
+		// 				this.statusBar.text = `Theme: ${activeEditor.config.theme}`;
+		// 				this.statusBar.show();
+		// 			} else {
+		// 				this.statusBar.hide();
+		// 			}
+		// 		},
+		// 		{ name: "Update UI" }
+		// 	),
+		// });
 	}
 
 	public async createDrawioEditorInWebview(
@@ -219,7 +224,21 @@ export class DrawioEditor {
 				this.handleExportCommand();
 			} else if (command === "save") {
 				this.drawioClient.triggerOnSave();
+			}else if (command === "OpenWithTemplate") {
+				this.drawioClient.showOpenDialog(document.document.uri);	
+			} else if (command === "ExportAsTemplate") {
+				this.handleExportTemplateCommand();
+			}else if (command) {
+				if (typeof command === 'object' && 'command' in command && command.command === 'ImportFromXMI') {
+					this.drawioClient.importFromXMI(document.document.uri, command.size, command.xml);
+				}
+				else if (typeof command === 'object' && 'command' in command && command.command === 'exportToWord') {
+					this.drawioClient.exportToWord(document.document.uri, command.data);
+				}
 			}
+			// else if (command === "exportToWord") {
+			// 	this.drawioClient.exportToWord(document.document.uri);
+			// }
 		});
 	}
 
@@ -275,8 +294,7 @@ export class DrawioEditor {
 	}
 
 	public async exportTo(targetExtension: string): Promise<void> {
-		// Exports the page that is visible in the editor
-		const buffer = await this.drawioClient.export(targetExtension, true);
+		const buffer = await this.drawioClient.export(targetExtension);
 		const targetUri = await window.showSaveDialog({
 			defaultUri: this.getUriWithExtension(targetExtension),
 		});
@@ -295,8 +313,8 @@ export class DrawioEditor {
 					description: "Converts the diagram to an editable SVG file",
 				},
 				{
-					label: ".drawio",
-					description: "Converts the diagram to a drawio file",
+					label: ".5md",
+					description: "Converts the diagram to a 5md file",
 				},
 
 				{
@@ -323,8 +341,8 @@ export class DrawioEditor {
 				description: "Exports the diagram to a png file",
 			},
 			{
-				label: ".drawio",
-				description: "Exports the diagram to a drawio file",
+				label: ".5md",
+				description: "Exports the diagram to a 5md file",
 			},
 		]);
 
@@ -335,52 +353,100 @@ export class DrawioEditor {
 	}
 
 	public async handleChangeThemeCommand(): Promise<void> {
+		let availableThemes = [
+			"automatic",
+			"min",
+			"atlas",
+			"dark",
+			"Kennedy",
+			"sketch",
+		];
+
 		const originalTheme = this.config.theme;
-		const originalAppearance = this.config.appearance;
-		const availableThemes = withFirstUnique(ResolvedDrawioTheme.getThemeNames(), originalTheme);
+		availableThemes = availableThemes.filter((t) => t !== originalTheme);
+		availableThemes.unshift(originalTheme);
 
-		const availableOptions: (QuickPickItem & { onSelect?: (preview: boolean) => void })[] = [];
-
-		const curVsCodeAppearance = this.config.getVsCodeAppearance();
-
-		const appearances = withFirstUnique(["automatic", "light", "dark"], originalAppearance);
-		for (const appearance of appearances) {
-			const appearanceLabel = appearance === "automatic" ? `always match VS Code theme '${curVsCodeAppearance}'` : appearance;
-
-			availableOptions.push({
-				kind: QuickPickItemKind.Separator,
-				label: appearanceLabel,
-			});
-			for (const theme of availableThemes) {
-				availableOptions.push({
-					label: `${theme} - ${appearance}`,
-					onSelect: () => {
-						this.config.setTheme(theme);
-						this.config.setAppearance(appearance);
-					}
-				});
-			}
-		}
 		const result = await window.showQuickPick(
-			availableOptions,
+			availableThemes.map((theme) => ({
+				label: theme,
+				description: `Selects Theme "${theme}"`,
+				theme,
+			})),
 			{
 				onDidSelectItem: async (item) => {
-					(item as any).onSelect(true);
+					await this.config.setTheme((item as any).theme);
 				},
 			}
 		);
-		if (!result || !result.onSelect) {
+
+		if (!result) {
 			await this.config.setTheme(originalTheme);
-			await this.config.setAppearance(originalAppearance);
 			return;
 		}
-		result.onSelect(false);
-	}
-}
 
-function withFirstUnique<T>(items: T[], firstItem: T): T[] {
-	const filtered = items.filter(t => t !== firstItem);
-	return [firstItem, ...filtered];
+		await this.config.setTheme(result.theme);
+	}
+
+	// 导出自定义模板
+	public async handleExportTemplateCommand(): Promise<void> {
+		// 弹出一个文本输入框让其输入文件名
+		const templateName = await window.showInputBox({
+			placeHolder: '请输入模板名称',
+			prompt: '请输入模板名称',
+		});
+		if (!templateName) {
+			window.showInformationMessage('请输入模板名称！');
+			return;
+		}
+		
+		// 获取当前模板的xml内容
+		// const templatePath = path.resolve(__dirname, `..${sep}..${sep}viewtemplates${sep}user${sep}${templateName}`);
+		const userHome = vscode.Uri.file(process.env.HOME || process.env.USERPROFILE || '');
+		const templatePath = `${userHome.fsPath}/.viewtemplates/${templateName}`;
+		// 如果文件夹不存在则创建文件夹
+		if (!await fileExists(vscode.Uri.file(templatePath))) {
+			await workspace.fs.createDirectory(vscode.Uri.file(templatePath));
+		} else {
+			// 如果文件夹存在则提示已存在，并询问是否继续 使用showquickpick
+			const result = await window.showQuickPick(
+				[
+				{
+					label: "是",
+					description: "继续导出",
+				},
+				{
+					label: "否",
+					description: "取消导出",
+				}],
+				{
+					placeHolder: `模板文件 "${templateName}" 已存在！是否继续导出？`,
+				}
+			);
+			if (result && result.label === '否') {
+				return;
+			}
+		}
+		
+		const drawioFile = path.resolve(templatePath, `${templateName}.5md`);
+		const pngFile = path.resolve(templatePath, `${templateName}.png`);
+
+		const buffer = await this.drawioClient.export('.5md');
+		await workspace.fs.writeFile(vscode.Uri.file(drawioFile), buffer);
+
+		const pngBuffer = await this.drawioClient.export('.png');
+		await workspace.fs.writeFile(vscode.Uri.file(pngFile), pngBuffer);
+
+
+		// let templateManager = new TemplateManager();
+		// let webview = this.webviewPanel.webview;
+		// webview.postMessage(JSON.stringify({
+		// 	action: "updataTemplatePages",
+		// 	data: templateManager.getTemplates(this.drawioClient._webview)
+		// }));
+
+		await window.showInformationMessage('导出成功！');
+	}
+
 }
 
 async function fileExists(uri: Uri): Promise<boolean> {
@@ -398,3 +464,4 @@ function removeEnd(value: string, end: string): string {
 	}
 	return value.substr(0, value.length - end.length);
 }
+

@@ -1,5 +1,5 @@
 import * as webpack from "webpack";
-import path = require("path");
+import * as path from "path";
 import { CleanWebpackPlugin } from "clean-webpack-plugin";
 
 const r = (file: string) => path.resolve(__dirname, file);
@@ -23,6 +23,10 @@ module.exports = {
 	module: {
 		rules: [
 			{ test: /\.css$/, use: ["style-loader", "css-loader"] },
+			{ 
+				test: /\.less$/,
+				use: ["style-loader", "css-loader", "less-loader"]
+			},
 			{
 				test: /\.html$/i,
 				loader: "raw-loader",

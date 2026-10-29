@@ -1,6 +1,4 @@
 import {
-	commands,
-	env,
 	Webview,
 	OutputChannel,
 	Uri,
@@ -10,8 +8,6 @@ import {
 } from "vscode";
 import { CustomizedDrawioClient, simpleDrawioLibrary } from ".";
 import { Config, DiagramConfig } from "../Config";
-import { VSCODE_PASSTHROUGH_KEYS } from "../vscodeShortcuts";
-import { appendEmbedParams } from "../utils/appendEmbedParams";
 import html from "./webview-content.html";
 import { formatValue } from "../utils/formatValue";
 import { autorun, observable, runInAction, untracked } from "mobx";
@@ -24,7 +20,7 @@ export class DrawioClientFactory {
 		private readonly config: Config,
 		private readonly log: OutputChannel,
 		private readonly extensionUri: Uri
-	) { }
+	) {}
 
 	public async createDrawioClientInWebview(
 		uri: Uri,
@@ -56,17 +52,7 @@ export class DrawioClientFactory {
 				config.simpleLabels;
 				config.zoomFactor;
 				config.globalVars;
-				config.showTooltipIcons;
-				config.showLinkIcons;
-				config.showConnectHandle;
 				config.resizeImages;
-				// Reload on theme/appearance SETTING changes, but NOT on system
-				// dark-mode changes: getHtml reads config.resolvedTheme untracked, so
-				// an OS appearance change is handled live by draw.io's dark=auto
-				// instead of forcing a full webview reload (which loses zoom/undo).
-				config.theme;
-				config.appearance;
-				config.appearanceFollowsSystem;
 				const html =
 					this.getHtml(config, options, webview, plugins) +
 					" ".repeat(i++);
@@ -107,58 +93,23 @@ export class DrawioClientFactory {
 					defaultEdgeStyle: config.defaultEdgeStyle,
 					colorNames: config.colorNames,
 					simpleLabels: config.simpleLabels,
-					defaultLibraries: "general",
+					defaultLibraries: "HESDSUseCase",
 					libraries: simpleDrawioLibrary(libs),
 					zoomFactor: config.zoomFactor,
-					globalVars: (config.globalVars as Record<string, string>) ?? undefined,
-					// Chords draw.io should forward to VS Code instead of handling
-					// itself (online/cross-origin path; offline uses the injected
-					// keydown listener in webview-content.html). See vscodeShortcuts.ts.
-					passThroughKeys: VSCODE_PASSTHROUGH_KEYS,
-					// The VS Code webview blocks new windows/tabs: draw.io forwards
-					// link clicks via {event:'openLink'} (handled below) instead of
-					// window.open. (Print can't work in the sandbox either — it needs
-					// a popup/modal — so it stays hidden via hideMenuItems.) See
-					// drawio-dev Editor.suppressNewWindows.
-					suppressNewWindows: true,
-					showTooltipIcons: config.showTooltipIcons || undefined,
-					showLinkIcons: config.showLinkIcons || undefined,
-					showConnectHandle: config.showConnectHandle || undefined,
-					compact: true,
-					noAutoFocus: true,
-					hideMenuItems: ["exportAs", "importFrom", "print",
-						"saveAndExit", "plugins", "exit"],
-					hideMenus: ["language", "help"],
+					globalVars: config.globalVars,
 				};
 			},
 			() => {
 				runInAction("Force reload", () => {
 					reloadId.id++;
 				});
-			},
-			() => config.svgAppearance
+			}
 		);
-
+		drawioClient._webview = webview;
 		drawioClient.onUnknownMessage.sub(({ message }) => {
 			if (message.event === "updateLocalStorage") {
 				const newLocalStorage = message.newLocalStorage;
 				config.setLocalStorage(newLocalStorage);
-			} else if (
-				((message as any).event === "vscodeShortcut" ||
-					(message as any).event === "shortcut") &&
-				(message as any).command
-			) {
-				// Forwarded VS Code chord (e.g. Ctrl+P): either from the offline
-				// webview keydown interceptor (vscodeShortcut) or draw.io's native
-				// embed passthrough (shortcut, online/cross-origin). Run it.
-				commands.executeCommand((message as any).command);
-			} else if (
-				(message as any).event === "openLink" &&
-				(message as any).href
-			) {
-				// Link click forwarded from draw.io (suppressNewWindows mode):
-				// open it in the host's default browser instead of a new tab.
-				env.openExternal(Uri.parse((message as any).href));
 			}
 		});
 
@@ -255,11 +206,11 @@ export class DrawioClientFactory {
 		webview: Webview,
 		plugins: { jsCode: string }[]
 	): string {
-		if (config.mode.kind === "offline") {
+		//if (config.mode.kind === "offline") {
 			return this.getOfflineHtml(config, options, webview, plugins);
-		} else {
-			return this.getOnlineHtml(config, config.mode.url);
-		}
+		// } else {
+		// 	return this.getOnlineHtml(config, config.mode.url);
+		// }
 	}
 
 	private getOfflineHtml(
@@ -281,26 +232,11 @@ export class DrawioClientFactory {
 
 		const localStorage = untracked(() => config.localStorage);
 
-		// Read theme values UNTRACKED so a system dark-mode change (which flips
-		// vscodeTheme.kind via resolvedTheme) does NOT trigger a full webview
-		// reload — draw.io's dark=auto re-themes live. The theme/appearance
-		// *settings* are tracked separately in the reload autorun.
-		const themeVals = untracked(() => {
-			const rt = config.resolvedTheme;
-			return {
-				theme: rt.themeName,
-				appearance: rt.getAppearanceDrawioValue(),
-				dark: rt.getDarkDrawioValue(config.appearanceFollowsSystem),
-			};
-		});
-
 		// TODO use template engine
 		// Prevent injection attacks by using JSON.stringify.
 		const patchedHtml = html
 			.replace(/\$\$literal-vsuri\$\$/g, vsuri.toString())
-			.replace("$$theme$$", JSON.stringify(themeVals.theme))
-			.replace("$$appearance$$", JSON.stringify(themeVals.appearance))
-			.replace("$$dark$$", JSON.stringify(themeVals.dark))
+			.replace("$$theme$$", JSON.stringify(config.theme))
 			.replace("$$lang$$", JSON.stringify(config.drawioLanguage))
 			.replace("$$simpleLabels$$", JSON.stringify(config.simpleLabels))
 			.replace(
@@ -320,34 +256,11 @@ export class DrawioClientFactory {
 	}
 
 	private getOnlineHtml(config: DiagramConfig, drawioUrl: string): string {
-		// Untracked: a system dark-mode change must not reload (dark=auto handles it).
-		const themeVals = untracked(() => {
-			const rt = config.resolvedTheme;
-			return {
-				theme: rt.themeName,
-				dark: rt.getDarkDrawioValue(config.appearanceFollowsSystem),
-			};
-		});
-		// The bridge below only sends to and accepts messages from the origin
-		// of the configured app, so diagram data can't reach a page the frame
-		// navigated to. A URL without an http(s) origin keeps the unpinned
-		// bridge. frame-src stays open since a self-hosted app may pass
-		// through a sign-in page on another origin.
-		let drawioOrigin = "*";
-		try {
-			const url = new URL(drawioUrl);
-			if (url.protocol === "https:" || url.protocol === "http:") {
-				drawioOrigin = url.origin;
-			}
-		} catch {
-			// Not an absolute URL
-		}
-		const nonce = getNonce();
 		return `
 			<html>
 			<head>
 			<meta charset="UTF-8">
-			<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline'; frame-src *;">
+			<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; worker-src * data: 'unsafe-inline' 'unsafe-eval'; font-src * 'unsafe-inline' 'unsafe-eval';">
 			<style>
 				html { height: 100%; width: 100%; padding: 0; margin: 0; }
 				body { height: 100%; width: 100%; padding: 0; margin: 0; }
@@ -355,30 +268,25 @@ export class DrawioClientFactory {
 			</style>
 			</head>
 			<body>
-				<script nonce="${nonce}">
+				<script>
 					const api = window.VsCodeApi = acquireVsCodeApi();
-					const drawioOrigin = ${JSON.stringify(drawioOrigin)};
 					window.addEventListener('message', event => {
 						
 						if (event.source === window.frames[0]) {
 							//console.log("frame -> vscode", event.data);
-							if (drawioOrigin === "*" || event.origin === drawioOrigin) {
-								api.postMessage(event.data);
-							}
+							api.postMessage(event.data);
 						} else {
 							//console.log("vscode -> frame", event.data);
-							window.frames[0].postMessage(event.data, drawioOrigin);
+							window.frames[0].postMessage(event.data, "*");
 						}
 					});
 				</script>
 
-				<iframe src="${appendEmbedParams(drawioUrl, `embed=1&ui=${encodeURIComponent(
-			themeVals.theme
-		)}&proto=json&configure=1&dark=${encodeURIComponent(
-			themeVals.dark
-		)}&noSaveBtn=0&noExitBtn=1&simpleLabels=${encodeURIComponent(
+				<iframe src="${drawioUrl}?embed=1&ui=${encodeURIComponent(
+			config.theme
+		)}&proto=json&configure=1&noSaveBtn=1&noExitBtn=1&simpleLabels=${encodeURIComponent(
 			config.simpleLabels
-		)}&lang=${encodeURIComponent(config.drawioLanguage)}`)}"></iframe>
+		)}&lang=${encodeURIComponent(config.drawioLanguage)}"></iframe>
 			</body>
 		</html>
 			`;
@@ -389,15 +297,6 @@ export interface DrawioClientOptions {
 	isReadOnly: boolean;
 }
 
-function getNonce(): string {
-	let text = "";
-	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-	for (let i = 0; i < 32; i++) {
-		text += chars.charAt(Math.floor(Math.random() * chars.length));
-	}
-	return text;
-}
-
 function prettify(msg: unknown): string {
 	try {
 		if (typeof msg === "string") {
@@ -405,6 +304,6 @@ function prettify(msg: unknown): string {
 			return formatValue(obj, process.env.DEV === "1" ? 500 : 80);
 		}
 		return formatValue(msg, process.env.DEV === "1" ? 500 : 80);
-	} catch { }
+	} catch {}
 	return "" + msg;
 }

@@ -1,12 +1,12 @@
 
 declare type CustomDrawioAction = UpdateVerticesAction | AddVerticesAction | GetVerticesAction
-    | LinkSelectedNodeWithDataAction | NodeSelectionEnabledAction | UpdateLiveshareViewState;
+    | LinkSelectedNodeWithDataAction | NodeSelectionEnabledAction | UpdateLiveshareViewState  | { action: "askForDonations" };
 declare type CustomDrawioEvent = NodeSelectedEvent | GetVerticesResultEvent
-    | UpdateLocalStorage | PluginLoaded | CursorChangedEvent | SelectionChangedEvent | FocusChangedEvent | InvokeCommandEvent | SelectionRectangleChangedEvent;
+    | UpdateLocalStorage | PluginLoaded | CursorChangedEvent | SelectionChangedEvent | FocusChangedEvent | InvokeCommandEvent | SelectionRectangleChangedEvent |templateDialogEvent;
 
 declare interface InvokeCommandEvent {
     event: "invokeCommand";
-    command: "export" | "save" | "convert";
+    command: "export" | "save" | "convert" | "openDonationPage" | "OpenWithTemplate" | "ExportAsTemplate"  | {command:'exportToWord', data:string} | {command: 'ImportFromXMI', size:string, xml:string};
 }
 
 declare interface FocusChangedEvent {
@@ -106,4 +106,9 @@ declare interface ParticipantSelectedRectangleInfo {
     id: string;
     color: string;
     rectangle: Rectangle;
+}
+
+declare interface templateDialogEvent {
+    event: "useTemplate" | "deleteTemplate";
+    uri: string;
 }

@@ -1,4 +1,4 @@
-import "./styles.css";
+import "./styles.less";
 import * as m from "mithril";
 
 export function showDialog(ui: DrawioUI) {

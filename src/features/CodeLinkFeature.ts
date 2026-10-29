@@ -83,20 +83,20 @@ export class LinkCodeWithSelectedNodeService {
 			{
 				dispose: autorun(
 					() => {
-						const activeEditor = editorManager.activeDrawioEditor;
-						this.statusBar.command =
-							toggleCodeLinkActivationCommandName;
+						// const activeEditor = editorManager.activeDrawioEditor;
+						// this.statusBar.command =
+						// 	toggleCodeLinkActivationCommandName;
 
-						if (activeEditor) {
-							this.statusBar.text = `$(link) ${
-								activeEditor.config.codeLinkActivated
-									? "$(circle-filled)"
-									: "$(circle-outline)"
-							} Code Link`;
-							this.statusBar.show();
-						} else {
-							this.statusBar.hide();
-						}
+						// if (activeEditor) {
+						// 	this.statusBar.text = `$(link) ${
+						// 		activeEditor.config.codeLinkActivated
+						// 			? "$(circle-filled)"
+						// 			: "$(circle-outline)"
+						// 	} Code Link`;
+						// 	this.statusBar.show();
+						// } else {
+						// 	this.statusBar.hide();
+						// }
 					},
 					{ name: "Update UI" }
 				),

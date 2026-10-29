@@ -9,7 +9,5 @@
 		"strict": true,
 		"experimentalDecorators": true
 	},
-	"include": ["./src/**/*", "./drawio-custom-plugins/src/types.d.ts"],
-	// Browser bundle with its own tsconfig (DOM lib, bundler resolution).
-	"exclude": ["./src/codeblock-editor/guest"]
+	"include": ["./src/**/*", "./drawio-custom-plugins/src/types.d.ts"]
 }

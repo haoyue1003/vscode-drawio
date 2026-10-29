@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 export type DrawioEvent =
 	| {
 			event: "merge";
@@ -24,7 +25,19 @@ export type DrawioEvent =
 	  }
 	| {
 			event: "configure";
-	  };
+	  }
+	| {
+		event: "useTemplate",
+		uri: string
+ 	  }	
+	| {
+		event: "deleteTemplate",
+		uri: string
+ 	  } 
+	| {
+		event: "promptStyleUnmodifiable",
+		data: string
+	 } ;
 
 export type DrawioAction =
 	| {
@@ -45,15 +58,15 @@ export type DrawioAction =
 	| {
 			action: "export";
 			format: DrawioFormat;
-			// Exports the visible page instead of the first page (png)
-			currentPage?: boolean;
-			// Colors of the svg (xmlsvg); draw.io ignores it for png
-			theme?: DrawioExportTheme;
 	  }
 	| {
 			action: "configure";
 			config: DrawioConfig;
-	  };
+	  }
+	| {
+		action: "showTemplatePages";
+		data: Array<Template>;
+  	  };
 // See https://desk.draw.io/support/solutions/articles/16000058316-how-to-configure-draw-io-
 
 export interface DrawioConfig {
@@ -168,51 +181,6 @@ export interface DrawioConfig {
 	 * Specifies if the XML output should be compressed. The default is true.
 	 */
 	compressXml?: boolean;
-
-	/**
-	 * If true, strips extra metadata from file data output (e.g. for embedding).
-	 */
-	compact?: boolean;
-
-	/**
-	 * If true, suppresses auto-focusing the editor window on load.
-	 */
-	noAutoFocus?: boolean;
-
-	/**
-	 * Array of menu item names to hide (e.g. ["exportAs", "plugins", "exit"]).
-	 */
-	hideMenuItems?: string[];
-
-	/**
-	 * Array of top-level menu names to hide (e.g. ["language", "help"]).
-	 */
-	hideMenus?: string[];
-
-	/**
-	 * The zoom factor for the editor. Must be > 1.
-	 */
-	zoomFactor?: number;
-
-	/**
-	 * Global variables for use in labels and tooltips.
-	 */
-	globalVars?: Record<string, string>;
-
-	/**
-	 * Specifies whether tooltip icons are shown. Default is false.
-	 */
-	showTooltipIcons?: boolean;
-
-	/**
-	 * Specifies whether link icons are shown. Default is false.
-	 */
-	showLinkIcons?: boolean;
-
-	/**
-	 * Specifies whether the connect handle is shown on selected vertices. Default is false.
-	 */
-	showConnectHandle?: boolean;
 }
 
 export interface ColorScheme {
@@ -271,8 +239,16 @@ export interface DrawioResource {
 
 export type DrawioFormat = "html" | "xmlpng" | "png" | "xml" | "xmlsvg";
 
-/**
- * The colors of an svg export: "auto" adapts to the color scheme of the page
- * that shows the svg (light-dark() colors).
- */
-export type DrawioExportTheme = "auto" | "light" | "dark";
+
+export interface Template {
+	id: string;
+	// 属于系统自带还是用户自定义
+	isSystem: boolean;
+	type: string;
+	data: {
+		name: string;
+		iconImageUrl: string;
+		xmlUrl: string;
+		xml: ''
+	}[];
+}
