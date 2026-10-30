@@ -6,15 +6,7 @@
 		{
 			"type": "npm",
 			"script": "dev",
-			"problemMatcher": {
-				"base": "$tsc",
-				"background": {
-					"activeOnStart": true,
-					"beginsPattern": "assets",
-					"endsPattern": "compiled"
-				}
-			},
-			"isBackground": true,
+			"problemMatcher": "$tsc",
 			"presentation": {
 				"reveal": "never"
 			},

@@ -1,5 +1,24 @@
 # Draw.io VS Code Integration
 
+> ## 衍生作品声明 / Derivative Work Notice
+>
+> 本项目（`hesds-modeling-design-tool`，「4+1 视图建模工具」）是基于
+> [hediet/vscode-drawio](https://github.com/hediet/vscode-drawio) **v1.6.6**
+> （Copyright © Henning Dieterichs，GPL-3.0）修改而来的衍生作品，并内置了
+> [jgraph/drawio](https://github.com/jgraph/drawio) 的修改版（Apache-2.0）。
+>
+> - 本仓库全部代码（含修改部分）按 **[GNU General Public License v3.0](./LICENSE.md)** 发布。
+>   您可以自由使用、修改、再分发，但再分发时须同样采用 GPL-3.0、附带许可证原文，并保留本声明与原版权信息。
+> - 相对上游 v1.6.6 的主要修改：扩展更名与发布者变更（`hesds`）、新增左侧「4+1 视图建模工具」活动栏视图、
+>   `*.5md` 语言与自定义编辑器 `hesds.4+1view-text`、内置模板与自定义模板/模型库管理、
+>   UML 模型自动生成 Word（docx）文档、XMI 1.1（用例图/时序图）导入、
+>   drawio 侧边栏面板与形状库定制（`drawio/src/main/webapp/js/diagramly/sidebar/Sidebar-Hesds*.js` 等）、
+>   drawio 自定义插件（`drawio-custom-plugins/`）等。详细变更见 [CHANGELOG.md](./CHANGELOG.md)。
+> - `drawio/` 目录为 draw.io 官方源码的修改版，遵循 **Apache License 2.0**，许可证见
+>   [drawio/LICENSE](./drawio/LICENSE)；其版权归 JGraph Ltd 及 draw.io 贡献者所有，
+>   本仓库已一并公开该目录下的全部修改。
+> - 本仓库与上述上游项目无隶属关系；上游的文档链接、贡献者名单与赞助入口仅作来源标注保留。
+
 [![](https://img.shields.io/static/v1?style=social&label=Sponsor&message=%E2%9D%A4&logo=GitHub&color&link=%3Curl%3E)](https://github.com/sponsors/hediet)
 [![](https://img.shields.io/static/v1?style=social&label=Donate&message=%E2%9D%A4&logo=Paypal&color&link=%3Curl%3E)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZP5F38L4C88UY&source=url)
 [![](https://img.shields.io/twitter/follow/hediet_dev.svg?style=social)](https://twitter.com/intent/follow?screen_name=hediet_dev)
